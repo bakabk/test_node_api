@@ -1,7 +1,11 @@
-var bodyParser = require('body-parser');
 var express = require('express');
+var bodyParser = require('body-parser');
+var ObjectID = require('mongodb').ObjectID;
+
+var db = require('./db');
 
 var app = express();
+var url = 'mongodb://localhost:27017/';
 
 app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({ extended: true }))
@@ -26,44 +30,74 @@ var artists = [
 ];
 
 app.get('/artists', function(req, res){
-  res.send(artists)
+  db.get().collection('artists').find().toArray(function(err, docs){
+    if (err) {
+      console.log(err);
+      return res.sendStatus(500);
+    }
+    res.send(docs);
+  })
 });
 
-app.get('/artists/:id', function(req, res){
-  console.log(req.params)
-
-  var artist = artists.find(function(artist){
-    return artist.id === Number(req.params.id)
+//get GET artist
+app.get('/artists/:id', function (req, res) {
+  db.get().collection('artists').findOne({ _id: ObjectID(req.params.id) }, function (err, doc) {
+    if (err) {
+      console.log(err);
+      return res.sendStatus(500);
+    }
+    res.send(doc);
   })
-
-  res.send(artist)
 })
 
-app.post('/artists', function(req, res){
+//add POST artists
+app.post('/artists', function (req, res) {
   var artist = {
-    id: Date.now(),
     name: req.body.name
-  }
-  artists.push(artist)
+  };
 
-  res.send(artists)
+  db.get().collection('artists').insert(artist, (err, result) => {
+    if (err) {
+      console.log(err);
+      return res.sendStatus(500);
+    }
+    res.send(artist);
+  })
 })
 
-app.put('/artists/:id', function(req, res){
-  var artist = artists.find(function(artist){
-    return artist.id === Number(req.params.id)
-  })
-  artist.name = req.body.name;
-  res.sendStatus(200)
+app.put('/artists/:id', function (req, res) {
+  db.get().collection('artists').update(
+    { _id: ObjectID(req.params.id) },
+    { name: req.body.name },
+    function (err, result) {
+      if (err) {
+        console.log(err);
+        return res.sendStatus(500);
+      }
+      res.sendStatus(200);
+    })
 })
 
 app.delete('/artists/:id', function(req, res){
-  artists = artists.filter(function(artist){
-    return artist.id !== Number(req.params.id)
-  })
-  res.sendStatus(200)
+  db.get().collection('artists').deleteOne(
+    { _id: ObjectID(req.params.id) },
+    function (err, result) {
+      if (err) {
+        console.log(err);
+        return res.sendStatus(500);
+      }
+      res.sendStatus(200);
+    }
+  )
 })
 
-app.listen(3012, function(){
-  console.log('API STARTED')
+db.connect(url, function (err, database) {
+  if (err) {
+    return console.log(err);
+  }
+  // db = database.db("mydb");
+  app.listen(3012, function () {
+    console.log('API app started');
+    console.log('Mongo started');
+  })
 })

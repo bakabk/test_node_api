@@ -38,5 +38,6 @@ db.connect(url, function (err, database) {
   app.listen(3012, function () {
     console.log('API app started!');
     console.log('Mongo started!');
+    console.log('NEW ENV', process.env.PRIVAT_KEY);
   })
 })
